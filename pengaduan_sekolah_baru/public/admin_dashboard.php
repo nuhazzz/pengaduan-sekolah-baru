@@ -64,6 +64,27 @@ if ($status !== "") {
 }
 $kelas = trim($_GET['kelas'] ?? ''); // contoh: "X-1" / "XI IPA 2" (sesuai isi kolom s.kelas)
 
+if (isset($_POST['hapus_aspirasi'])) {
+  $id = (int)($_POST['id_pelaporan'] ?? 0);
+
+  if ($id > 0) {
+    // hapus data aspirasi (kalau ada)
+    $del1 = mysqli_prepare($conn, "DELETE FROM aspirasi WHERE id_pelaporan=?");
+    mysqli_stmt_bind_param($del1, "i", $id);
+    mysqli_stmt_execute($del1);
+
+    // hapus input aspirasi
+    $del2 = mysqli_prepare($conn, "DELETE FROM input_aspirasi WHERE id_pelaporan=?");
+    mysqli_stmt_bind_param($del2, "i", $id);
+    mysqli_stmt_execute($del2);
+  }
+
+  // refresh supaya tidak resubmit
+  header("Location: ".$_SERVER['REQUEST_URI']);
+  exit;
+}
+
+
 
 /* Ambil list data */
 $sql = "
@@ -220,13 +241,22 @@ $kat = mysqli_query($conn, "SELECT id_kategori, ket_kategori FROM kategori ORDER
   <tr>
     <td><?= $no++ ?></td>
     <td><?= htmlspecialchars($r['created_at']) ?></td>
-    <td><?= (int)$r['nis'] ?></td>
+    <td><?= htmlspecialchars($r['nis']) ?></td>
     <td><?= htmlspecialchars($r['kelas']) ?></td>
     <td><?= htmlspecialchars($r['ket_kategori']) ?></td>
     <td><?= htmlspecialchars($r['lokasi']) ?></td>
     <td><?= htmlspecialchars($r['ket']) ?></td>
     <td><?= htmlspecialchars($r['status']) ?></td>
-    <td><a class="action-btn" href="admin_aspirasi_detail.php?id=<?= (int)$r['id_pelaporan'] ?>">Feedback</a></td>
+    <td style="display:flex;gap:6px">
+    <a class="action-btn" href="admin_aspirasi_detail.php?id=<?= (int)$r['id_pelaporan'] ?>">Feedback</a>
+
+    <form method="post" onsubmit="return confirm('Hapus data aspirasi ini?')" style="margin:0">
+      <input type="hidden" name="id_pelaporan" value="<?= (int)$r['id_pelaporan'] ?>">
+      <button class="action-btn" name="hapus_aspirasi" value="1"
+        style="background:#d12b2b">Delete</button>
+    </form>
+  </td>
+
   </tr>
   <?php endwhile; ?>
 </tbody>
